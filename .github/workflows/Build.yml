@@ -56,6 +56,9 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          
+      - name: Build no features
+        run: cargo build --verbose
         
       - name: Build `download-to-file`
         run: cargo build --verbose --features download-to-file
