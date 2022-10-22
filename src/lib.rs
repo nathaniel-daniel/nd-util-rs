@@ -8,6 +8,11 @@ mod drop_remove_path;
 #[cfg(feature = "drop-remove-path")]
 pub use self::drop_remove_path::DropRemovePath;
 
+use std::ffi::OsStr;
+use std::ffi::OsString;
+use std::path::Path;
+use std::path::PathBuf;
+
 /// Push an extension to a [`PathBuf`].
 pub fn push_extension<S>(path: &mut PathBuf, extension: S)
 where
