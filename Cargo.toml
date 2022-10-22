@@ -8,6 +8,7 @@ license = "MIT OR Apache-2.0"
 anyhow = { version = "1.0.66", optional = true }
 reqwest = { version = "0.11.12", default-features = false, optional = true }
 tokio = { version = "1.21.2", default-features = false, optional = true }
+tracing = { version = "0.1.35", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.21.2", default-features = false, features = [ "macros" ] }
@@ -20,4 +21,11 @@ download-to-file = [
     "reqwest",
     "tokio",
     "tokio/fs",
+]
+
+drop-remove-path = [
+    "tokio",
+    "tokio/fs",
+    "tokio/rt",
+    "tracing",
 ]
