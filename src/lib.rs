@@ -60,3 +60,31 @@ where
     path_string.push(extension);
     PathBuf::from(path_string)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn push_path_extension_works() {
+        let base_path = PathBuf::from("file.txt");
+        let extension = "part";
+        let with_push_extension_path = with_push_extension(&base_path, extension);
+        let mut push_extension_path = base_path.clone();
+        push_extension(&mut push_extension_path, extension);
+
+        let expected = Path::new("file.txt.part");
+        assert!(with_push_extension_path == expected);
+        assert!(push_extension_path == expected);
+
+        let base_path = PathBuf::from("file");
+        let extension = "part";
+        let with_push_extension_path = with_push_extension(&base_path, extension);
+        let mut push_extension_path = base_path.clone();
+        push_extension(&mut push_extension_path, extension);
+
+        let expected = Path::new("file.part");
+        assert!(with_push_extension_path == expected);
+        assert!(push_extension_path == expected);
+    }
+}
