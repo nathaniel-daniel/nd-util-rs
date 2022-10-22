@@ -90,6 +90,10 @@ mod test {
 
     #[tokio::test]
     async fn drop_remove_tokio_file_sanity_check() {
+        tokio::fs::create_dir_all("test_tmp")
+            .await
+            .expect("failed to create tmp dir");
+
         let file_path: &Path = "test_tmp/test.txt".as_ref();
         let file_data = b"testing 1 2 3";
 
