@@ -70,7 +70,7 @@ mod test {
         let base_path = PathBuf::from("file.txt");
         let extension = "part";
         let with_push_extension_path = with_push_extension(&base_path, extension);
-        let mut push_extension_path = base_path.clone();
+        let mut push_extension_path = base_path;
         push_extension(&mut push_extension_path, extension);
 
         let expected = Path::new("file.txt.part");
@@ -80,7 +80,7 @@ mod test {
         let base_path = PathBuf::from("file");
         let extension = "part";
         let with_push_extension_path = with_push_extension(&base_path, extension);
-        let mut push_extension_path = base_path.clone();
+        let mut push_extension_path = base_path;
         push_extension(&mut push_extension_path, extension);
 
         let expected = Path::new("file.part");
