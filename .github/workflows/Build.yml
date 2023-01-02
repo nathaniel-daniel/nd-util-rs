@@ -23,7 +23,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-lint-cargo-${{ hashFiles('**/Cargo.lock') }}
           
       - name: Fmt
         run: cargo fmt --all -- --check
@@ -55,7 +55,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-build-cargo-${{ hashFiles('**/Cargo.lock') }}
           
       - name: Build no features
         run: cargo build --verbose
@@ -65,6 +65,9 @@ jobs:
         
       - name: Build `drop-remove-path`
         run: cargo build --verbose --features drop-remove-path
+        
+      - name: Build `download-to-path`
+        run: cargo build --verbose --features download-to-path
 
       - name: Run Tests
         run: cargo test --all --verbose --all-features

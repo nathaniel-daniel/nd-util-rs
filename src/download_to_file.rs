@@ -33,17 +33,17 @@ pub async fn download_to_file(
         file.write_all(&chunk)
             .await
             .context("failed to write to file")?;
-        actual_length +=
-            u64::try_from(chunk.len()).context("failed to convert chunk size to `u64`")?;
+
+        // This will panic if the server sends back a chunk larger than 4GB,
+        // which is incredibly unlikely/probably impossible.
+        actual_length += u64::try_from(chunk.len()).unwrap();
     }
 
     // Ensure file size matches content_length
     if let Some(content_length) = content_length {
         ensure!(
             content_length == actual_length,
-            "content-length mismatch, {} (content length) != {} (actual length)",
-            content_length,
-            actual_length
+            "content-length mismatch, {content_length} (content length) != {actual_length} (actual length)",
         );
     }
 
