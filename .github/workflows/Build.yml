@@ -65,6 +65,9 @@ jobs:
         
       - name: Build `drop-remove-path`
         run: cargo build --verbose --features drop-remove-path
+        
+      - name: Build `download-to-path`
+        run: cargo build --verbose --features download-to-path
 
       - name: Run Tests
         run: cargo test --all --verbose --all-features

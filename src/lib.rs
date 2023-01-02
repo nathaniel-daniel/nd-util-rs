@@ -8,6 +8,11 @@ mod drop_remove_path;
 #[cfg(feature = "drop-remove-path")]
 pub use self::drop_remove_path::DropRemovePath;
 
+#[cfg(feature = "download-to-path")]
+mod download_to_path;
+#[cfg(feature = "download-to-path")]
+pub use self::download_to_path::download_to_path;
+
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
