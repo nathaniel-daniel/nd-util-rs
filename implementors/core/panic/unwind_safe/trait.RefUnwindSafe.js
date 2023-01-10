@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"nd_util":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.65.0/core/panic/unwind_safe/trait.RefUnwindSafe.html\" title=\"trait core::panic::unwind_safe::RefUnwindSafe\">RefUnwindSafe</a> for <a class=\"struct\" href=\"nd_util/struct.DropRemovePath.html\" title=\"struct nd_util::DropRemovePath\">DropRemovePath</a>",1,["nd_util::drop_remove_path::DropRemovePath"]]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
