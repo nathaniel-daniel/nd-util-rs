@@ -19,7 +19,5 @@ tokio = { version = "1.26.0", default-features = false, features = [ "macros" ] 
 default = []
 
 download-to-file = ["anyhow", "reqwest", "tokio", "tokio/fs"]
-
-drop-remove-path = ["tokio", "tokio/fs", "tokio/rt", "tokio/io-util", "tracing"]
-
-download-to-path = ["download-to-file", "drop-remove-path", "cfg-if", "fd-lock"]
+drop-remove-path = ["tokio", "tokio/fs", "tokio/rt", "tokio/io-util"]
+download-to-path = ["download-to-file", "drop-remove-path", "cfg-if", "fd-lock", "tracing"]

@@ -2,7 +2,6 @@ use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::path::Path;
 use std::path::PathBuf;
-use tracing::warn;
 
 /// Asyncronously remove a file at a path on drop.
 ///
@@ -17,7 +16,7 @@ pub struct DropRemovePath {
 }
 
 impl DropRemovePath {
-    /// Make a new [`DropRemovePath`]
+    /// Make a new [`DropRemovePath`].
     pub fn new<P>(path: P) -> Self
     where
         P: AsRef<Path>,
@@ -28,7 +27,7 @@ impl DropRemovePath {
         }
     }
 
-    /// Persist this file path
+    /// Persist the file at this path.
     pub fn persist(&mut self) {
         self.should_remove = false;
     }
@@ -75,8 +74,13 @@ impl Drop for DropRemovePath {
         // Try to remove the path.
         tokio::spawn(async move {
             if should_remove {
-                if let Err(e) = tokio::fs::remove_file(path).await {
-                    warn!("failed to delete file '{}'", e);
+                if let Err(error) = tokio::fs::remove_file(path).await {
+                    let message = format!("failed to delete file: '{error}'");
+                    if std::thread::panicking() {
+                        eprintln!("{message}");
+                    } else {
+                        panic!("{message}");
+                    }
                 }
             }
         });
