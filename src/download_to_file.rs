@@ -1,4 +1,5 @@
-use anyhow::{ensure, Context};
+use anyhow::ensure;
+use anyhow::Context;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
@@ -14,8 +15,7 @@ pub async fn download_to_file(
         .send()
         .await
         .context("failed to get headers")?
-        .error_for_status()
-        .context("invalid http status")?;
+        .error_for_status()?;
 
     // Pre-allocate file space if possible.
     let content_length = response.content_length();
@@ -34,8 +34,8 @@ pub async fn download_to_file(
             .await
             .context("failed to write to file")?;
 
-        // This will panic if the server sends back a chunk larger than 4GB,
-        // which is incredibly unlikely/probably impossible.
+        // This will panic if the server sends back a chunk larger than u64::MAX,
+        // which is incredibly unlikely/impossible.
         actual_length += u64::try_from(chunk.len()).unwrap();
     }
 
