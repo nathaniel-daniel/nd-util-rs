@@ -19,8 +19,7 @@ use tracing::warn;
 /// # Locking
 /// During downloads, the temporary file is locked via advisory locking on platforms that support it.
 /// If locking is not supported, overwriting a pre-existing temporary file causes an error.
-/// Additionally, Windows will also use mandatory, exclusive file access when using temporary files.
-/// Currently, Unix and Windows support advisory locking, while only Windows supports mandatory file access.
+/// Currently, Unix and Windows support advisory locking.
 pub async fn download_to_path<P>(client: &reqwest::Client, url: &str, path: P) -> anyhow::Result<()>
 where
     P: AsRef<Path>,
@@ -33,17 +32,13 @@ where
 
     // Setup to open the temporary file.
     //
+    // We do NOT use mandatory locking on Windows.
+    // This is because the file would need to be dropped to be renamed,
+    // which leads to a race as we must release ALL locks to do so.
+    //
     // TODO: On linux, consider probing for O_TMPFILE support somehow and create an unnamed tmp file and use linkat.
     let mut open_options = tokio::fs::OpenOptions::new();
     open_options.write(true);
-
-    // Mandatory, exclusive locking on Windows.
-    cfg_if! {
-        if #[cfg(windows)] {
-            // Ensure that other programs cannot read or write to this one.
-            open_options.share_mode(0);
-        }
-    }
 
     // If we don't have a mechanism to prevent stomping,
     // at least ensure that we can't stomp.
@@ -82,6 +77,13 @@ where
         download_to_file(client, url, &mut temporary_file)
             .await?;
 
+        // Perform rename from temporary file path to actual file path.
+        tokio::fs::rename(&temporary_path, &path)
+            .await
+            .context("failed to rename temporary file")?;
+
+        // Ensure that the file handle is dropped AFTER we rename.
+        //
         // Uwrap the file from the file lock.
         cfg_if! {
             if #[cfg(any(unix, windows))] {
@@ -93,14 +95,7 @@ where
             }
         }
 
-        // Close the file,
-        // so that renaming will work on windows as we prevent deleting with a 0 share_mode flag.
         drop(temporary_file.into_std());
-
-        // Perform rename from temporary file path to actual file path.
-        tokio::fs::rename(&temporary_path, &path)
-            .await
-            .context("failed to rename temporary file")?;
 
         Ok(())
     }
