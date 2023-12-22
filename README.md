@@ -9,6 +9,7 @@ See the Features section to see the available utilities.
 | `download-to-file` | A function to asynchronously preallocate and download to a `tokio` file via a `reqwest` client.                                                                                  |
 | `drop-remove-path` | A Guard that wraps a `Path`, which tries to asynchronously delete the file it wraps when it drops. The user can specify for the path to persist as well.                         |
 | `download-to-path` | A function to asynchronously download a file to a path using `download-to-file`. It uses temp files and locking to ensure that the file at the given path is valid and complete. |
+| `arc-anyhow-error` | A wrapper for an `anyhow::Error` that is clonable and can itself be nested into an `anyhow::Error`.                                                                              |
 
 ## License
 Licensed under either of
