@@ -13,6 +13,11 @@ mod download_to_path;
 #[cfg(feature = "download-to-path")]
 pub use self::download_to_path::download_to_path;
 
+#[cfg(feature = "arc-anyhow-error")]
+mod arc_anyhow_error;
+#[cfg(feature = "arc-anyhow-error")]
+pub use self::arc_anyhow_error::ArcAnyhowError;
+
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
