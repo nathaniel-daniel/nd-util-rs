@@ -18,7 +18,7 @@ tokio = { version = "1.36.0", default-features = false, features = [ "macros" ] 
 [features]
 default = []
 
-download-to-file = ["dep:anyhow", "dep:reqwest", "dep:tokio", "tokio/fs"]
+download-to-file = ["dep:anyhow", "dep:reqwest", "dep:tokio", "tokio/fs", "tokio/io-util"]
 drop-remove-path = ["dep:tokio", "tokio/fs", "tokio/rt", "tokio/io-util"]
 download-to-path = ["download-to-file", "drop-remove-path", "dep:cfg-if", "dep:fd-lock", "dep:tracing"]
 arc-anyhow-error = ["dep:anyhow"]
