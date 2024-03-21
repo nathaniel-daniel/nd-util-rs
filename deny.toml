@@ -24,9 +24,7 @@ exceptions = []
 [bans]
 multiple-versions = "warn"
 highlight = "all"
-skip = [
-
-]
+skip = []
 
 [sources]
 unknown-registry = "deny"
