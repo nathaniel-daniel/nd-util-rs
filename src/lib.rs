@@ -38,7 +38,7 @@ where
 
     // Take the path memory, make it a string, push the extension, and restore the argument path.
     //
-    // Ideally, I woudln't take ownership of the original string,
+    // Ideally, I wouldn't take ownership of the original string,
     // but there is no API to push arbitrary bytes to a [`PathBuf`].
     // Similarly, there is no api to access the underlying [`OsString`] of a [`PathBuf`].
     let mut path_string = OsString::from(std::mem::take(path));
@@ -71,6 +71,40 @@ where
     PathBuf::from(path_string)
 }
 
+/// Try to create a dir at the given path.
+///
+/// # Returns
+/// Returns `Ok(true)` if the dir was created.
+/// Returns `Ok(false)` if the dir already exists.
+/// Returns and error if there was an error creating the dir.
+pub fn try_create_dir<P>(path: P) -> std::io::Result<bool>
+where
+    P: AsRef<Path>,
+{
+    match std::fs::create_dir(path) {
+        Ok(()) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
+/// Try to remove a dir at the given path.
+///
+/// # Returns
+/// Returns `Ok(true)` if the dir was removed.
+/// Returns `Ok(false)` if the dir did not exist.
+/// Returns and error if there was an error removing the dir.
+pub fn try_remove_dir<P>(path: P) -> std::io::Result<bool>
+where
+    P: AsRef<Path>,
+{
+    match std::fs::remove_dir(path) {
+        Ok(()) => Ok(true),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(error) => Err(error),
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -96,5 +130,15 @@ mod test {
         let expected = Path::new("file.part");
         assert!(with_push_extension_path == expected);
         assert!(push_extension_path == expected);
+    }
+
+    #[test]
+    fn try_create_dir_works() {
+        let path = "test_tmp/try_create_dir";
+        try_remove_dir(path).expect("failed to remove dir");
+        assert!(try_create_dir(path).expect("failed to create dir"));
+        assert!(!try_create_dir(path).expect("failed to create dir"));
+        assert!(try_remove_dir(path).expect("failed to remove dir"));
+        assert!(!try_remove_dir(path).expect("failed to remove dir"));
     }
 }
