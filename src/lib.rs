@@ -135,6 +135,9 @@ mod test {
     #[test]
     fn try_create_dir_works() {
         let path = "test_tmp/try_create_dir";
+
+        std::fs::create_dir_all("test_tmp").expect("failed to create tmp dir");
+
         try_remove_dir(path).expect("failed to remove dir");
         assert!(try_create_dir(path).expect("failed to create dir"));
         assert!(!try_create_dir(path).expect("failed to create dir"));
