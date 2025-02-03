@@ -12,13 +12,15 @@ ignore = []
 [licenses]
 confidence-threshold = 0.93
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016" ]
+allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "Unicode-3.0" ]
 exceptions = []
 
 [bans]
 multiple-versions = "warn"
 highlight = "all"
-skip = []
+skip = [
+    { name = "windows-sys", version = "0.52.0" },
+]
 
 [sources]
 unknown-registry = "deny"
