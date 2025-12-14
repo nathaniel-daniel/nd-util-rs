@@ -1,9 +1,115 @@
-use crate::download_to_file;
-use crate::DropRemovePath;
+use crate::DropRemovePathBlocking;
 use anyhow::Context;
-use cfg_if::cfg_if;
+use std::io::Write;
 use std::path::Path;
+use std::path::PathBuf;
 use tracing::warn;
+
+const LOCKING_SUPPORTED: bool = cfg!(unix) || cfg!(windows);
+
+fn download_to_path_blocking(
+    handle: tokio::runtime::Handle,
+    client: &reqwest::Client,
+    url: &str,
+    path: PathBuf,
+) -> anyhow::Result<()> {
+    // Create temporary path.
+    let temporary_path = path.with_added_extension("part");
+
+    // Setup to open the temporary file.
+    //
+    // We do NOT use mandatory locking on Windows.
+    // This is because the file would need to be dropped to be renamed,
+    // which leads to a race as we must release ALL locks to do so.
+    //
+    // TODO: On linux, consider probing for O_TMPFILE support somehow and create an unnamed tmp file and use linkat.
+    let mut open_options = std::fs::OpenOptions::new();
+    open_options.write(true);
+
+    // If we don't have a mechanism to prevent stomping,
+    // at least ensure that we can't stomp.
+    if LOCKING_SUPPORTED {
+        // We prevent stomping by locking somehow.
+        // Create and overwrite the temporary file.
+        open_options.create(true);
+    } else {
+        // If the temporary file exists, return an error.
+        open_options.create_new(true);
+    }
+
+    // Open the temporary file.
+    let mut temporary_file = open_options
+        .open(&temporary_path)
+        .context("failed to create temporary file")?;
+
+    // Create the remove handle for the temporary path.
+    let mut temporary_path = DropRemovePathBlocking::new(temporary_path);
+
+    // We fall back to create_new for temp file creation if we know we are on an unsupported platform.
+    // Therefore, we don't need to do anything special here if we are on an unsupported platform.
+    // TODO: Check for and handle unsupported errors.
+    if LOCKING_SUPPORTED {
+        temporary_file
+            .try_lock()
+            .context("failed to lock temporary file")?;
+    }
+
+    let result = (|| {
+        // Send the request
+        let mut response = handle
+            .block_on(client.get(url).send())
+            .context("failed to get headers")?
+            .error_for_status()?;
+
+        // Download the file chunk-by-chunk
+        while let Some(chunk) = handle
+            .block_on(response.chunk())
+            .context("failed to get next chunk")?
+        {
+            temporary_file
+                .write_all(&chunk)
+                .context("failed to write to file")?;
+        }
+
+        // Sync data
+        temporary_file.flush().context("failed to flush file")?;
+        temporary_file
+            .sync_all()
+            .context("failed to sync file data")?;
+
+        // Perform rename from temporary file path to actual file path.
+        std::fs::rename(&temporary_path, &path).context("failed to rename temporary file")?;
+
+        Ok(())
+    })();
+
+    // Since we renamed (or failed), we can unlock the file and drop it.
+    if LOCKING_SUPPORTED {
+        temporary_file.unlock()?;
+    }
+    drop(temporary_file);
+
+    match result.as_ref() {
+        Ok(()) => {
+            // Persist the file,
+            // since it was renamed and we don't want to remove a non-existent file.
+            temporary_path.persist();
+        }
+        Err(_error) => {
+            // Try to clean up the temporary file before returning.
+            if let Err((mut temporary_path, error)) = temporary_path.try_drop() {
+                // Don't try to delete the file again.
+                temporary_path.persist();
+
+                // Returning the original error is more important,
+                // so we just log the temporary file error here.
+                warn!("failed to delete temporary file: \"{error}\"");
+            }
+        }
+    }
+
+    result
+}
 
 /// Using the given client, download the file at a url to a given path.
 ///
@@ -23,103 +129,13 @@ pub async fn download_to_path<P>(client: &reqwest::Client, url: &str, path: P) -
 where
     P: AsRef<Path>,
 {
-    // Get the path.
-    let path = path.as_ref();
-
-    // Create temporary path.
-    let temporary_path = path.with_added_extension("part");
-
-    // Setup to open the temporary file.
-    //
-    // We do NOT use mandatory locking on Windows.
-    // This is because the file would need to be dropped to be renamed,
-    // which leads to a race as we must release ALL locks to do so.
-    //
-    // TODO: On linux, consider probing for O_TMPFILE support somehow and create an unnamed tmp file and use linkat.
-    let mut open_options = tokio::fs::OpenOptions::new();
-    open_options.write(true);
-
-    // If we don't have a mechanism to prevent stomping,
-    // at least ensure that we can't stomp.
-    cfg_if! {
-        if #[cfg(any(windows, unix))] {
-            // We prevent stomping by locking somehow.
-            // Create and overwrite the temporary file.
-            open_options.create(true);
-        } else {
-            // If the temporary file exists, return an error.
-            open_options.create_new(true);
-        }
-    }
-
-    // Open the temporary file.
-    let temporary_file = open_options
-        .open(&temporary_path)
-        .await
-        .context("failed to create temporary file")?;
-
-    // Create the remove handle for the temporary path.
-    let mut temporary_path = DropRemovePath::new(temporary_path);
-
-    let result = async {
-        // Wrap the file in a lock, if the platform supports it.
-        cfg_if! {
-            if #[cfg(any(unix, windows))] {
-                let mut temporary_file_lock = fd_lock::RwLock::new(temporary_file);
-                let mut temporary_file = temporary_file_lock.try_write().context("failed to lock temporary file")?;
-            } else {
-                let mut temporary_file = temporary_file;
-            }
-        }
-
-        // Perform download.
-        download_to_file(client, url, &mut temporary_file)
-            .await?;
-
-        // Perform rename from temporary file path to actual file path.
-        tokio::fs::rename(&temporary_path, &path)
-            .await
-            .context("failed to rename temporary file")?;
-
-        // Ensure that the file handle is dropped AFTER we rename.
-        //
-        // Uwrap the file from the file lock.
-        cfg_if! {
-            if #[cfg(any(unix, windows))] {
-                // Unlock lock.
-                drop(temporary_file);
-
-                // Get file from lock.
-                let temporary_file = temporary_file_lock.into_inner();
-            }
-        }
-
-        drop(temporary_file.into_std());
-
-        Ok(())
-    }
-    .await;
-
-    match result.as_ref() {
-        Ok(()) => {
-            // Persist the file,
-            // since it was renamed and we don't want to remove a non-existent file.
-            temporary_path.persist();
-        }
-        Err(_error) => {
-            // Try to clean up the temporary file before returning.
-            if let Err((mut temporary_path, error)) = temporary_path.try_drop().await {
-                // Don't try to delete the file again.
-                temporary_path.persist();
-
-                // Returning the original error is more important,
-                // so we just log the temporary file error here.
-                warn!("failed to delete temporary file '{error}'");
-            }
-        }
-    }
-
-    result
+    let handle = tokio::runtime::Handle::try_current()?;
+    let client = client.clone();
+    let url = url.to_string();
+    let path = path.as_ref().to_path_buf();
+    tokio::task::spawn_blocking(move || download_to_path_blocking(handle, &client, &url, path))
+        .await??;
+    Ok(())
 }
 
 #[cfg(test)]
