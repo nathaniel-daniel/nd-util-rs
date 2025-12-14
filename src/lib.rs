@@ -161,7 +161,7 @@ mod test {
         let file_data = b"testing 1 2 3";
 
         {
-            let mut file = std::fs::File::create(&file_path).expect("failed to create file");
+            let mut file = std::fs::File::create(file_path).expect("failed to create file");
             let drop_remove_path = DropRemovePathBlocking::new(file_path);
 
             file.write_all(file_data).expect("failed to write data");
@@ -173,7 +173,7 @@ mod test {
         assert!(!exists, "nonpersisted file exists");
 
         {
-            let mut file = std::fs::File::create(&file_path).expect("failed to create file");
+            let mut file = std::fs::File::create(file_path).expect("failed to create file");
             let mut drop_remove_path = DropRemovePathBlocking::new(file_path);
 
             file.write_all(file_data).expect("failed to write data");
