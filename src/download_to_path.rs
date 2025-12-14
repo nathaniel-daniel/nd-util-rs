@@ -1,5 +1,4 @@
 use crate::download_to_file;
-use crate::with_push_extension;
 use crate::DropRemovePath;
 use anyhow::Context;
 use cfg_if::cfg_if;
@@ -28,7 +27,7 @@ where
     let path = path.as_ref();
 
     // Create temporary path.
-    let temporary_path = with_push_extension(path, "part");
+    let temporary_path = path.with_added_extension("part");
 
     // Setup to open the temporary file.
     //

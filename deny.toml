@@ -12,14 +12,20 @@ ignore = []
 [licenses]
 confidence-threshold = 0.93
 private = { ignore = true }
-allow = [ "Apache-2.0", "MIT", "Unicode-DFS-2016", "Unicode-3.0" ]
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+]
 exceptions = []
 
 [bans]
 multiple-versions = "warn"
 highlight = "all"
 skip = [
-    { name = "windows-sys", version = "0.52.0" },
+    # # This updates often and the ecosystem takes time to update
+    # { name = "windows-sys", version = "0" },
 ]
 
 [sources]

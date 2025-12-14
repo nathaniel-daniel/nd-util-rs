@@ -5,15 +5,15 @@ edition = "2021"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-anyhow = { version = "1.0.98", optional = true }
-cfg-if = { version = "1.0.0", optional = true }
+anyhow = { version = "1.0.100", optional = true }
+cfg-if = { version = "1.0.4", optional = true }
 fd-lock = { version = "4.0.4", optional = true }
-reqwest = { version = "0.12.18", default-features = false, optional = true }
-tokio = { version = "1.45.1", default-features = false, optional = true }
-tracing = { version = "0.1.41", optional = true }
+reqwest = { version = "0.12.25", default-features = false, optional = true }
+tokio = { version = "1.48.0", default-features = false, optional = true }
+tracing = { version = "0.1.43", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1.45.1", default-features = false, features = [ "macros" ] }
+tokio = { version = "1.48.0", default-features = false, features = [ "macros" ] }
 
 [features]
 default = []
