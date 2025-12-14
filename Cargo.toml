@@ -18,5 +18,5 @@ default = []
 
 download-to-file = ["dep:anyhow", "dep:reqwest", "dep:tokio", "tokio/fs", "tokio/io-util"]
 drop-remove-path = ["dep:tokio", "tokio/fs", "tokio/rt", "tokio/io-util"]
-download-to-path = ["dep:tokio", "tokio/rt", "dep:tracing"]
+download-to-path = ["dep:anyhow", "dep:tokio", "tokio/rt", "dep:tracing"]
 arc-anyhow-error = ["dep:anyhow"]
