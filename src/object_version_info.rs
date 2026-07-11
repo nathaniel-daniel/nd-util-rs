@@ -30,7 +30,7 @@ where
     R: object::read::ReadRef<'data>,
 {
     let mut raw = Vec::new();
-    while raw.is_empty() || *raw.last().unwrap() != 0 {
+    while raw.last().is_none_or(|value| *value != 0) {
         let value: U16<LE> = *reader
             .read(offset)
             .ok()
@@ -274,6 +274,10 @@ impl VersionInfo {
     where
         R: object::read::ReadRef<'data>,
     {
+        const EXPECTED_KEY: &str = "VS_VERSION_INFO\0";
+        const STRING_FILE_INFO_KEY: &str = "StringFileInfo\0";
+        const VAR_FILE_INFO_KEY: &str = "VarFileInfo\0";
+
         let start_offset = *offset;
 
         let _length: U16<LE> = *reader.read(offset).ok().context("Failed to read length")?;
@@ -286,13 +290,12 @@ impl VersionInfo {
         let type_: U16<LE> = *reader.read(offset).ok().context("Failed to read type")?;
         ensure!(type_.get(LE) == 0, "text version data is not supported");
 
-        let expected_key = "VS_VERSION_INFO\0";
         let key: &[u16] = reader
-            .read_slice(offset, expected_key.len())
+            .read_slice(offset, EXPECTED_KEY.len())
             .ok()
             .context("Failed to read key")?;
         let key = String::from_utf16(key)?;
-        ensure!(expected_key == key);
+        ensure!(EXPECTED_KEY == key);
 
         read_padding(reader, offset)?;
 
@@ -314,10 +317,8 @@ impl VersionInfo {
         }
 
         let mut maybe_string_file_info: Option<Option<StringFileInfo>> = None;
-        let string_file_info_key = "StringFileInfo\0";
-        let var_file_info_key = "VarFileInfo\0";
-        let key_peek_len = std::cmp::min(string_file_info_key.len(), var_file_info_key.len());
-        loop {
+        let key_peek_len = std::cmp::min(STRING_FILE_INFO_KEY.len(), VAR_FILE_INFO_KEY.len());
+        while *offset - start_offset < expected_size {
             read_padding(reader, offset)?;
 
             let start_offset = *offset;
@@ -332,22 +333,23 @@ impl VersionInfo {
             ensure!(value_length.get(LE) == 0);
 
             let type_: U16<LE> = *reader.read(offset).ok().context("Failed to read type")?;
-            ensure!(type_.get(LE) == 1);
+            let type_ = type_.get(LE);
+            ensure!(type_ == 1, "Invalid VarFileInfo type {type_} != 1");
 
             let key_bytes: &[u16] = reader
                 .read_slice(offset, key_peek_len)
                 .ok()
                 .context("Failed to read key bytes")?;
             let key = String::from_utf16(key_bytes)?;
-            if key == string_file_info_key[..key_peek_len] {
+            if key == STRING_FILE_INFO_KEY[..key_peek_len] {
                 ensure!(maybe_string_file_info.is_none());
 
                 let remaining_key_bytes: &[u16] = reader
-                    .read_slice(offset, string_file_info_key.len() - key_peek_len)
+                    .read_slice(offset, STRING_FILE_INFO_KEY.len() - key_peek_len)
                     .ok()
                     .context("Failed to read remaining key bytes")?;
                 let remaining_key_bytes = String::from_utf16(remaining_key_bytes)?;
-                ensure!(string_file_info_key[key_peek_len..] == remaining_key_bytes);
+                ensure!(STRING_FILE_INFO_KEY[key_peek_len..] == remaining_key_bytes);
 
                 read_padding(reader, offset)?;
 
@@ -366,9 +368,35 @@ impl VersionInfo {
                 let string_file_info = StringFileInfo { children };
 
                 maybe_string_file_info = Some(Some(string_file_info));
-            } else if key == var_file_info_key[..key_peek_len] {
+            } else if key == VAR_FILE_INFO_KEY[..key_peek_len] {
+                read_padding(reader, offset)?;
+
+                let start_offset = *offset;
+                let length: U16<LE> = *reader.read(offset).ok().context("Failed to read length")?;
+                let length = length.get(LE);
+
+                let _value_length: U16<LE> = *reader
+                    .read(offset)
+                    .ok()
+                    .context("Failed to read value length")?;
+
+                let _type: U16<LE> = *reader.read(offset).ok().context("Failed to read type")?;
+
+                let key_bytes: &[u16] = reader
+                    .read_slice(offset, key_peek_len)
+                    .ok()
+                    .context("Failed to read key bytes")?;
+                let key = String::from_utf16(key_bytes)?;
+                ensure!(key == "Translation\0");
+
+                read_padding(reader, offset)?;
+
                 // TODO: Parse this
-                break;
+                while *offset - start_offset < u64::from(length) {
+                    let value: U32<LE> =
+                        *reader.read(offset).ok().context("Failed to read value")?;
+                    let _value = value.get(LE);
+                }
             } else {
                 bail!("Unknown key \"{key}\"");
             }
