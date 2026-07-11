@@ -25,6 +25,11 @@ pub use self::object_version_info::GetVersionInfo;
 #[cfg(feature = "object-version-info")]
 pub use self::object_version_info::VersionInfo;
 
+#[cfg(feature = "async-mutex-map")]
+mod async_mutex_map;
+#[cfg(feature = "async-mutex-map")]
+pub use self::async_mutex_map::AsyncMutexMap;
+
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::path::Path;
