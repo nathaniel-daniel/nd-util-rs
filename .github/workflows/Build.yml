@@ -76,6 +76,9 @@ jobs:
         
       - name: Build `object-version-info`
         run: cargo build --verbose --features object-version-info
+        
+      - name: Build `async-mutex-map`
+        run: cargo build --verbose --features async-mutex-map
 
       - name: Run Tests
         run: cargo test --all --verbose --all-features
