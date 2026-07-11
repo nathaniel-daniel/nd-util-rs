@@ -6,14 +6,14 @@ license = "MIT OR Apache-2.0"
 
 [dependencies]
 anyhow = { version = "1.0.103", optional = true }
-object = { version = "0.39.1", optional = true }
+object = { version = "0.39.1", default-features = false, optional = true }
 reqwest = { version = "0.13.4", default-features = false, optional = true }
 tokio = { version = "1.52.3", default-features = false, optional = true }
 tracing = { version = "0.1.44", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.52.3", default-features = false, features = [ "macros" ] }
-object = { version = "0.39.1", features = [ "std" ] }
+object = { version = "0.39.1", default-features = false, features = [ "std" ] }
 
 [features]
 default = []
@@ -22,5 +22,5 @@ download-to-file = ["dep:anyhow", "dep:reqwest", "dep:tokio", "tokio/fs", "tokio
 drop-remove-path = ["dep:tokio", "tokio/fs", "tokio/rt", "tokio/io-util"]
 download-to-path = ["dep:anyhow", "dep:reqwest", "dep:tokio", "tokio/rt", "dep:tracing"]
 arc-anyhow-error = ["dep:anyhow"]
-object-version-info = ["dep:anyhow", "dep:object"]
+object-version-info = ["dep:anyhow", "dep:object", "object/read_core", "object/pe"]
 async-mutex-map = ["dep:tokio", "tokio/sync"]

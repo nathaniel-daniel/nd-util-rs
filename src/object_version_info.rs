@@ -167,7 +167,7 @@ impl StringStruct {
             .read(offset)
             .ok()
             .context("Failed to read value length")?;
-        let value_length = value_length.get(LE);
+        let _value_length = value_length.get(LE);
 
         let type_: U16<LE> = *reader
             .read(offset)
@@ -176,19 +176,21 @@ impl StringStruct {
         let type_ = type_.get(LE);
         ensure!(type_ == 1, "Unsupported string struct type {type_}");
 
+        // Relying on value_length here is simply wrong in some cases.
+        // I have no idea why.
+        // Just use the nul.
         let mut key = read_utf16_nul_string(reader, offset)?;
 
         read_padding(reader, offset)?;
 
-        let value: &[U16<LE>] = reader
-            .read_slice(offset, value_length.into())
-            .ok()
-            .context("Failed to read value")?;
-        let value: Vec<u16> = value.iter().map(|value| value.get(LE)).collect();
-        // Can these ever be non-unicode?
-        let mut value = String::from_utf16(&value)?;
+        let mut value = read_utf16_nul_string(reader, offset)?;
 
-        ensure!(*offset - start_offset == u64::from(length));
+        // Not in the docs, but it seems to be necessary?
+        read_padding(reader, offset)?;
+
+        let actual_bytes_read = *offset - start_offset;
+        let expected_bytes_read = u64::from(length);
+        ensure!(actual_bytes_read == expected_bytes_read, "Unexpected number of bytes read for StringStruct [{actual_bytes_read} (actual) vs {expected_bytes_read} (expected)]");
 
         // Do not retain nuls.
         key.pop();
@@ -221,7 +223,8 @@ impl StringTable {
         ensure!(value_length.get(LE) == 0);
 
         let type_: U16<LE> = *reader.read(offset).ok().context("Failed to read type")?;
-        ensure!(type_.get(LE) == 1);
+        let type_ = type_.get(LE);
+        ensure!(type_ == 0 || type_ == 1, "Invalid StringTable type {type_}");
 
         let key: &[u16] = reader
             .read_slice(offset, 8)
@@ -243,8 +246,6 @@ impl StringTable {
             if current_length == u64::from(length) {
                 break;
             }
-
-            read_padding(reader, offset)?;
         }
 
         Ok(Self { key, children })
@@ -324,7 +325,9 @@ impl VersionInfo {
 
         let mut maybe_string_file_info: Option<Option<StringFileInfo>> = None;
         let key_peek_len = std::cmp::min(STRING_FILE_INFO_KEY.len(), VAR_FILE_INFO_KEY.len());
-        while *offset - start_offset < expected_size {
+        while *offset - start_offset != expected_size {
+            ensure!(*offset - start_offset < expected_size);
+
             read_padding(reader, offset)?;
 
             let start_offset = *offset;
@@ -340,7 +343,7 @@ impl VersionInfo {
 
             let type_: U16<LE> = *reader.read(offset).ok().context("Failed to read type")?;
             let type_ = type_.get(LE);
-            ensure!(type_ == 1, "Invalid VarFileInfo type {type_} != 1");
+            ensure!(type_ == 0 || type_ == 1, "Invalid VarFileInfo type {type_}");
 
             let key_bytes: &[u16] = reader
                 .read_slice(offset, key_peek_len)
