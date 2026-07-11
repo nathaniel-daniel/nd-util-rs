@@ -383,50 +383,6 @@ impl VersionInfo {
     }
 }
 
-pub trait GetVersionInfo {
-    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>>;
-}
-
-impl<'a, R> GetVersionInfo for object::read::File<'a, R> where R: object::read::ReadRef<'a> {
-    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>> {
-        match self {
-            object::read::File::Pe32(file) => file.get_version_info(),
-            object::read::File::Pe64(file) => file.get_version_info(),
-            _ => bail!("Unsupported object file format {:?}", self.format()),
-        }
-    }
-}
-
-impl<'a, R> GetVersionInfo for object::read::pe::PeFile32<'a, R> where R: object::read::ReadRef<'a> {
-    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>> {
-        let section_table = self.section_table();
-        let data_directories = self.data_directories();
-        let resource_directory =
-            data_directories.resource_directory(self.data(), &section_table)?;
-        let resource_directory = match resource_directory {
-            Some(resource_directory) => resource_directory,
-            None => return Ok(None),
-        };
-        let root = resource_directory.root()?;
-        get_version_entry_common(self.data(), section_table, resource_directory, &root)
-    }
-}
-
-impl<'a, R> GetVersionInfo for object::read::pe::PeFile64<'a, R> where R: object::read::ReadRef<'a> {
-    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>> {
-        let section_table = self.section_table();
-        let data_directories = self.data_directories();
-        let resource_directory =
-            data_directories.resource_directory(self.data(), &section_table)?;
-        let resource_directory = match resource_directory {
-            Some(resource_directory) => resource_directory,
-            None => return Ok(None),
-        };
-        let root = resource_directory.root()?;
-        get_version_entry_common(self.data(), section_table, resource_directory, &root)
-    }
-}
-
 fn get_version_entry_common<'a, R>(
     reader: R,
     section_table: SectionTable<'a>,
@@ -478,19 +434,72 @@ where
     Ok(Some(version_info))
 }
 
+pub trait GetVersionInfo {
+    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>>;
+}
+
+impl<'a, R> GetVersionInfo for object::read::pe::PeFile32<'a, R>
+where
+    R: object::read::ReadRef<'a>,
+{
+    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>> {
+        let section_table = self.section_table();
+        let data_directories = self.data_directories();
+        let resource_directory =
+            data_directories.resource_directory(self.data(), &section_table)?;
+        let resource_directory = match resource_directory {
+            Some(resource_directory) => resource_directory,
+            None => return Ok(None),
+        };
+        let root = resource_directory.root()?;
+        get_version_entry_common(self.data(), section_table, resource_directory, &root)
+    }
+}
+
+impl<'a, R> GetVersionInfo for object::read::pe::PeFile64<'a, R>
+where
+    R: object::read::ReadRef<'a>,
+{
+    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>> {
+        let section_table = self.section_table();
+        let data_directories = self.data_directories();
+        let resource_directory =
+            data_directories.resource_directory(self.data(), &section_table)?;
+        let resource_directory = match resource_directory {
+            Some(resource_directory) => resource_directory,
+            None => return Ok(None),
+        };
+        let root = resource_directory.root()?;
+        get_version_entry_common(self.data(), section_table, resource_directory, &root)
+    }
+}
+
+impl<'a, R> GetVersionInfo for object::read::File<'a, R>
+where
+    R: object::read::ReadRef<'a>,
+{
+    fn get_version_info(&self) -> anyhow::Result<Option<VersionInfo>> {
+        match self {
+            object::read::File::Pe32(file) => file.get_version_info(),
+            object::read::File::Pe64(file) => file.get_version_info(),
+            _ => bail!("Unsupported object file format {:?}", self.format()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
     use object::read::ReadCache;
     use std::fs::File;
-    
+
     #[test]
     fn basic() {
         let file = File::open("test-data/Decrypter.exe").expect("Failed to open test file");
         let reader = ReadCache::new(file);
-        
+
         let file = object::File::parse(&reader).expect("Failed to parse pe file");
-        
+
         let version_info = file.get_version_info().expect("Failed to get version info");
         dbg!(version_info);
     }
