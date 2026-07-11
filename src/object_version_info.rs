@@ -148,12 +148,6 @@ impl FixedFileInfo {
 }
 
 #[derive(Debug)]
-enum StringOrBinary {
-    String(String),
-    Binary(Vec<u8>),
-}
-
-#[derive(Debug)]
 pub struct StringStruct {
     pub key: String,
     pub value: String,
@@ -173,7 +167,7 @@ impl StringStruct {
             .read(offset)
             .ok()
             .context("Failed to read value length")?;
-        let value_length = value_length.get(LE);
+        let _value_length = value_length.get(LE);
 
         let type_: U16<LE> = *reader
             .read(offset)
