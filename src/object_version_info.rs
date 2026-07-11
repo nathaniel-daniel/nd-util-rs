@@ -150,7 +150,7 @@ impl FixedFileInfo {
 #[derive(Debug)]
 pub struct StringStruct {
     pub key: String,
-    pub value: Vec<u16>,
+    pub value: String,
 }
 
 impl StringStruct {
@@ -176,7 +176,7 @@ impl StringStruct {
         let type_ = type_.get(LE);
         ensure!(type_ == 1, "Unsupported string struct type {type_}");
 
-        let key = read_utf16_nul_string(reader, offset)?;
+        let mut key = read_utf16_nul_string(reader, offset)?;
 
         read_padding(reader, offset)?;
 
@@ -185,8 +185,14 @@ impl StringStruct {
             .ok()
             .context("Failed to read value")?;
         let value: Vec<u16> = value.iter().map(|value| value.get(LE)).collect();
+        // Can these ever be non-unicode?
+        let mut value = String::from_utf16(&value)?;
 
         ensure!(*offset - start_offset == u64::from(length));
+
+        // Do not retain nuls.
+        key.pop();
+        value.pop();
 
         Ok(Self { key, value })
     }
@@ -528,7 +534,23 @@ mod test {
 
         let file = object::File::parse(&reader).expect("Failed to parse pe file");
 
-        let version_info = file.get_version_info().expect("Failed to get version info");
-        dbg!(version_info);
+        let version_info = file
+            .get_version_info()
+            .expect("Failed to get version info")
+            .expect("Missing version info");
+        let string_file_info = version_info
+            .string_file_info
+            .as_ref()
+            .expect("Missing string file info");
+        let table = string_file_info
+            .children
+            .first()
+            .expect("Missing string table");
+        for child in table.children.iter() {
+            match child.key.as_str() {
+                "OriginalFilename" => assert!(child.value == "RPG Maker Decrypter.exe"),
+                _ => {}
+            }
+        }
     }
 }
