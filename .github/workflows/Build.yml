@@ -1,5 +1,5 @@
 name: Rust
-'on':
+"on":
   push:
     branches:
       - master
@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        
+
       - name: Cache
         uses: actions/cache@v6
         with:
@@ -24,30 +24,30 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-lint-cargo-${{ hashFiles('**/Cargo.lock') }}
-          
+
       - name: Fmt
         run: cargo fmt --all -- --check
-         
+
       - name: Clippy
         run: cargo clippy --tests --all --all-features -- -D warnings
-          
+
   deny:
     name: Deny
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        
+
       - name: Deny
         uses: EmbarkStudios/cargo-deny-action@v2
-        
+
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        
+
       - name: Cache
         uses: actions/cache@v6
         with:
@@ -58,25 +58,25 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: ${{ runner.os }}-build-cargo-${{ hashFiles('**/Cargo.lock') }}
-          
+
       - name: Build no features
         run: cargo build --verbose
-        
+
       - name: Build `download-to-file`
         run: cargo build --verbose --features download-to-file
-        
+
       - name: Build `drop-remove-path`
         run: cargo build --verbose --features drop-remove-path
-        
+
       - name: Build `download-to-path`
         run: cargo build --verbose --features download-to-path
-        
+
       - name: Build `arc-anyhow-error`
         run: cargo build --verbose --features arc-anyhow-error
-        
+
       - name: Build `object-version-info`
         run: cargo build --verbose --features object-version-info
-        
+
       - name: Build `async-mutex-map`
         run: cargo build --verbose --features async-mutex-map
 
