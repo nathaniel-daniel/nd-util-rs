@@ -255,9 +255,6 @@ mod test {
             tokio::time::timeout(Duration::from_millis(50), &mut lock_future)
                 .await
                 .unwrap_err();
-
-            drop(guard_1);
-            drop(lock_future);
         }
 
         // Map should have released all resources.
