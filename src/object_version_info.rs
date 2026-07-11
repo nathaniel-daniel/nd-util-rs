@@ -549,6 +549,7 @@ mod test {
         for child in table.children.iter() {
             match child.key.as_str() {
                 "OriginalFilename" => assert!(child.value == "RPG Maker Decrypter.exe"),
+                "ProductName" => assert!(child.value == "RPG Maker Decrypter"),
                 _ => {}
             }
         }
