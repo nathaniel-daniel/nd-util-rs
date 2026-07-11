@@ -18,6 +18,13 @@ mod arc_anyhow_error;
 #[cfg(feature = "arc-anyhow-error")]
 pub use self::arc_anyhow_error::ArcAnyhowError;
 
+#[cfg(feature = "object-version-info")]
+mod object_version_info;
+#[cfg(feature = "object-version-info")]
+pub use self::object_version_info::GetVersionInfo;
+#[cfg(feature = "object-version-info")]
+pub use self::object_version_info::VersionInfo;
+
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::path::Path;
