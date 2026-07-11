@@ -12,7 +12,7 @@ pub struct AsyncMutexMapLockError(());
 
 impl std::fmt::Display for AsyncMutexMapLockError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        "the resource is locked".fmt(f)
+        "The resource is locked".fmt(f)
     }
 }
 
@@ -183,7 +183,7 @@ where
                 //
                 // This is a critical failure,
                 // the map has failed to keep track of accesses.
-                unreachable!("missing key in map");
+                unreachable!("Missing key in map");
             }
         };
 
