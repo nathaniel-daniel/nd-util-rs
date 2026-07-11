@@ -249,7 +249,7 @@ mod test {
         let map = AsyncMutexMap::new();
 
         {
-            let guard_1 = map.lock(1).await;
+            let _guard_1 = map.lock(1).await;
 
             let mut lock_future = std::pin::pin!(map.lock(1));
             tokio::time::timeout(Duration::from_millis(50), &mut lock_future)
